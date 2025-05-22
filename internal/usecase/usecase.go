@@ -2,18 +2,19 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/timmbarton/layout/lifecycle"
 	"github.com/timmbarton/utils/tracing"
+	"github.com/timmbarton/utils/types/dates"
 
 	"github.com/robfig/cron/v3"
 
 	"backend/internal/models"
 	"backend/internal/repository"
+	"backend/pkg/coingecko"
 	"backend/pkg/tgads"
 )
 
@@ -30,11 +31,12 @@ type Config struct {
 	RefreshStatsLoadingWorkersCount int `validate:"min=1,max=10"`
 }
 
-func New(cfg Config, r *repository.Repositories, tgads *tgads.Client) UseCase {
+func New(cfg Config, r *repository.Repositories, tgads *tgads.Client, cg *coingecko.Client) UseCase {
 	return &useCase{
 		cfg:   cfg,
 		r:     r,
 		tgads: tgads,
+		cg:    cg,
 		c:     cron.New(),
 	}
 }
@@ -43,11 +45,17 @@ type useCase struct {
 	cfg   Config
 	r     *repository.Repositories
 	tgads *tgads.Client
+	cg    *coingecko.Client
 	c     *cron.Cron
 }
 
 func (uc *useCase) Start(_ context.Context) error {
-	_, err := uc.c.AddFunc(fmt.Sprintf("%d * * * *", time.Now().Minute()+1), uc.RefreshStats) // "55 * * * *"
+	_, err := uc.c.AddFunc("45 * * * *", uc.LoadRates)
+	if err != nil {
+		return err
+	}
+
+	_, err = uc.c.AddFunc("55 * * * *", uc.RefreshStats)
 	if err != nil {
 		return err
 	}
@@ -114,6 +122,38 @@ func (uc *useCase) RefreshStats() {
 	}
 
 	wg.Wait()
+}
+
+// LoadRates подгружает курс TON к USD
+func (uc *useCase) LoadRates() {
+	ctx := context.Background()
+
+	yesterdayDate := dates.Date(time.Now().AddDate(0, 0, -1))
+	todayDate := dates.Date(time.Now())
+
+	yesterdayRate, err := uc.cg.GetTonRate(ctx, yesterdayDate)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	err = uc.r.Rates.Create(ctx, yesterdayDate, yesterdayRate)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	todayRate, err := uc.cg.GetTonRate(ctx, todayDate)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	err = uc.r.Rates.Create(ctx, todayDate, todayRate)
+	if err != nil {
+		log.Println(err)
+		return
+	}
 }
 
 type CreateCampaignRequest struct {

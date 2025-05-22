@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/shopspring/decimal"
+	"github.com/timmbarton/utils/types/dates"
 
 	"backend/internal/models"
 	"backend/pkg/tgads"
@@ -12,6 +14,7 @@ import (
 type Repositories struct {
 	Campaigns CampaignsRepository
 	Stats     StatsRepository
+	Rates     RatesRepository
 }
 
 func New(pg *sqlx.DB) *Repositories {
@@ -20,6 +23,9 @@ func New(pg *sqlx.DB) *Repositories {
 			pg: pg,
 		},
 		Stats: &statsRepository{
+			pg: pg,
+		},
+		Rates: &ratesRepository{
 			pg: pg,
 		},
 	}
@@ -32,4 +38,8 @@ type CampaignsRepository interface {
 
 type StatsRepository interface {
 	Create(ctx context.Context, campaignId string, stats []*tgads.Stats) error
+}
+
+type RatesRepository interface {
+	Create(ctx context.Context, date dates.Date, rate decimal.Decimal) error
 }

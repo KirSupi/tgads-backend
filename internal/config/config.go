@@ -9,8 +9,9 @@ import (
 )
 
 type Config struct {
-	HTTP     httpserver.Config
-	Postgres postgresconn.Config
-	Tracing  tracingconn.Config
-	UseCase  usecase.Config
+	HTTP            httpserver.Config
+	Postgres        postgresconn.Config
+	Tracing         tracingconn.Config
+	UseCase         usecase.Config
+	CoinGeckoApiKey string `validate:"required"`
 }

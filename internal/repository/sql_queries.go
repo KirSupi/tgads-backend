@@ -2,7 +2,7 @@ package repository
 
 const (
 	queryCreateStats = `
-		INSERT INTO tgads.stats(campaign_id, datetime, views, clicks, actions, spend, cpm)
+		INSERT INTO tgads.stats(campaign_id, "datetime", views, clicks, actions, spend, cpm)
 		VALUES ($1::text,
 				unnest($2::timestamptz[]),
 				unnest($3::int[]),
@@ -10,7 +10,13 @@ const (
 				unnest($5::int[]),
 				unnest($6::decimal[]),
 				unnest($7::decimal[]))
-		ON CONFLICT (campaign_id, DATETIME) DO NOTHING
+		ON CONFLICT (campaign_id, "datetime") 
+		             DO UPDATE SET 
+		                 views = EXCLUDED.views, 
+		                 clicks = EXCLUDED.clicks, 
+		                 actions = EXCLUDED.actions, 
+		                 spend = EXCLUDED.spend, 
+		                 cpm = EXCLUDED.cpm
 	`
 	queryCreateCampaign = `
 		INSERT INTO tgads.campaigns(id, name, stats_csv_link, budget_csv_link, text, button_text, link, active)
@@ -27,5 +33,10 @@ const (
 	queryFetchCampaigns = `
 		SELECT *
 		FROM tgads.campaigns
+	`
+	queryCreateRate = `
+		INSERT INTO tgads.rates(date, rate)
+		VALUES ($1::date,$2::decimal)
+		ON CONFLICT (DATE) DO UPDATE SET rate = EXCLUDED.rate
 	`
 )

@@ -10,6 +10,7 @@ import (
 	"backend/internal/delivery/http"
 	"backend/internal/repository"
 	"backend/internal/usecase"
+	"backend/pkg/coingecko"
 	"backend/pkg/tgads"
 )
 
@@ -22,7 +23,7 @@ func New(cfg config.Config) (executor.App, error) {
 	}
 
 	r := repository.New(pg.DB())
-	uc := usecase.New(cfg.UseCase, r, tgads.New())
+	uc := usecase.New(cfg.UseCase, r, tgads.New(), coingecko.New(cfg.CoinGeckoApiKey))
 	httpServer := http.New(cfg.HTTP, uc)
 
 	a.AddComponents(
