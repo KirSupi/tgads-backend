@@ -2,15 +2,15 @@ package repository
 
 const (
 	queryCreateStats = `
-		INSERT INTO tgads.stats(campaign_id, "datetime", views, clicks, actions, spend, cpm)
+		INSERT INTO tgads.stats(campaign_id, "date", views, clicks, actions, spend, cpm)
 		VALUES ($1::text,
-				unnest($2::timestamptz[]),
+				unnest($2::date[]),
 				unnest($3::int[]),
 				unnest($4::int[]),
 				unnest($5::int[]),
 				unnest($6::decimal[]),
 				unnest($7::decimal[]))
-		ON CONFLICT (campaign_id, "datetime") 
+		ON CONFLICT (campaign_id, "date") 
 		             DO UPDATE SET 
 		                 views = EXCLUDED.views, 
 		                 clicks = EXCLUDED.clicks, 
